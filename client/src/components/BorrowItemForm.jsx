@@ -5,6 +5,14 @@ const toInputDate = date => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
   return local.toISOString().slice(0, 10)
 }
+const itemIcon = item => {
+  const name = `${item.category || ''} ${item.name || ''}`.toLowerCase()
+  if (name.includes('headphone')) return 'headphones'
+  if (name.includes('book')) return 'book'
+  if (name.includes('laptop') || name.includes('computer')) return 'laptop'
+  if (name.includes('usb') || name.includes('cable')) return 'usb'
+  return 'box'
+}
 
 function BorrowItemForm({ item, owner, borrowerName, onCancel, onSubmit, busy = false, error = '' }) {
   const checkoutDate = toInputDate(new Date())
@@ -15,7 +23,23 @@ function BorrowItemForm({ item, owner, borrowerName, onCancel, onSubmit, busy = 
     due.setDate(due.getDate() + 7)
     return toInputDate(due)
   })
+  const [calendarOpen, setCalendarOpen] = useState(false)
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const selected = new Date(`${returnDate}T12:00:00`)
+    return new Date(selected.getFullYear(), selected.getMonth(), 1)
+  })
   const [purpose, setPurpose] = useState('')
+
+  const selectedReturnDate = new Date(`${returnDate}T12:00:00`)
+  const monthLabel = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(calendarMonth)
+  const dateLabel = new Intl.DateTimeFormat(undefined, { month: '2-digit', day: '2-digit', year: 'numeric' }).format(selectedReturnDate)
+  const calendarStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1)
+  calendarStart.setDate(calendarStart.getDate() - calendarStart.getDay())
+  const calendarDays = Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(calendarStart)
+    date.setDate(calendarStart.getDate() + index)
+    return date
+  })
 
   const changeDuration = value => {
     setDuration(value)
@@ -41,7 +65,7 @@ function BorrowItemForm({ item, owner, borrowerName, onCancel, onSubmit, busy = 
       </header>
       <form className="borrow-form-card" onSubmit={handleSubmit}>
         <div className="borrow-selected-item">
-          <span className="borrow-selected-icon"><GroupIcon name="box" /></span>
+          <span className="borrow-selected-icon"><GroupIcon name={itemIcon(item)} /></span>
           <div><strong>{item.name}</strong><span className="borrow-available-badge">Available</span><small>Owner: {owner.name}</small></div>
         </div>
         <div className="borrow-form-fields">
@@ -70,7 +94,49 @@ function BorrowItemForm({ item, owner, borrowerName, onCancel, onSubmit, busy = 
             />
           </label>}
           <label className="borrow-form-field"><span>Return Date</span>
-            <span className="borrow-date-input"><GroupIcon name="calendar" /><input type="date" min={checkoutDate} value={returnDate} onChange={event => setReturnDate(event.target.value)} required /></span>
+            <span className="borrow-date-picker">
+              <span className="borrow-date-input">
+                <GroupIcon name="calendar" />
+                <input type="text" value={dateLabel} readOnly onClick={() => {
+                  const selected = new Date(`${returnDate}T12:00:00`)
+                  setCalendarMonth(new Date(selected.getFullYear(), selected.getMonth(), 1))
+                  setCalendarOpen(open => !open)
+                }} aria-label="Return date" aria-expanded={calendarOpen} aria-haspopup="dialog" />
+                <button type="button" onClick={() => {
+                  const selected = new Date(`${returnDate}T12:00:00`)
+                  setCalendarMonth(new Date(selected.getFullYear(), selected.getMonth(), 1))
+                  setCalendarOpen(open => !open)
+                }} aria-label={calendarOpen ? 'Close calendar' : 'Open calendar'}><GroupIcon name="calendar" /></button>
+              </span>
+              {calendarOpen && <span className="borrow-calendar" role="dialog" aria-label="Choose return date">
+                <span className="borrow-calendar-header">
+                  <strong>{monthLabel}</strong>
+                  <span>
+                    <button type="button" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} aria-label="Previous month">‹</button>
+                    <button type="button" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} aria-label="Next month">›</button>
+                  </span>
+                </span>
+                <span className="borrow-calendar-grid borrow-calendar-weekdays" aria-hidden="true">
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}
+                </span>
+                <span className="borrow-calendar-grid">
+                  {calendarDays.map((date, index) => {
+                    const value = toInputDate(date)
+                    const isCurrentMonth = date.getMonth() === calendarMonth.getMonth()
+                    const isSelected = value === returnDate
+                    return <button
+                      type="button"
+                      key={`${value}-${index}`}
+                      className={`${isCurrentMonth ? '' : 'outside-month'} ${isSelected ? 'selected' : ''}`}
+                      disabled={value < checkoutDate}
+                      onClick={() => { setReturnDate(value); setCalendarOpen(false) }}
+                      aria-pressed={isSelected}
+                    >{date.getDate()}</button>
+                  })}
+                </span>
+                <span className="borrow-calendar-footer"><button type="button" onClick={() => { setReturnDate(checkoutDate); setCalendarMonth(new Date(`${checkoutDate}T12:00:00`)); setCalendarOpen(false) }}>Today</button></span>
+              </span>}
+            </span>
           </label>
           <label className="borrow-form-field borrow-purpose-field"><span>Purpose (optional)</span>
             <textarea maxLength={200} value={purpose} onChange={event => setPurpose(event.target.value)} placeholder="e.g., Project work, Exam preparation..." />
