@@ -1,5 +1,7 @@
 const configuredApiUrl = import.meta.env.VITE_API_URL
-  || (import.meta.env.DEV ? 'http://localhost:3000/api' : '/api')
+  || (import.meta.env.DEV
+    ? 'http://localhost:3000/api'
+    : 'https://borrowbuddy-oklz.onrender.com/api')
 
 export const API_BASE_URL = configuredApiUrl.replace(/\/+$/, '')
 export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '')

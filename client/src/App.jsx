@@ -3,6 +3,7 @@ import heroImage from './assets/hero-image.png'
 import './App.css'
 import ViewGroup from './components/ViewGroup'
 import Inventory from './components/Inventory/Inventory'
+import BorrowingHistory from './components/BorrowingHistory'
 import GroupItemCount from './components/Inventory/GroupItemCount'
 import { BorrowBuddyProvider } from './context/BorrowBuddyContext'
 import { apiRequest, getAssetUrl } from './services/apiClient'
@@ -34,6 +35,7 @@ function App() {
   const [membersLoading, setMembersLoading] = useState(false)
   const [selectedGroupId, setSelectedGroupId] = useState(null)
   const [loans, setLoans] = useState([])
+  const [loansLoading, setLoansLoading] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [notificationsLoading, setNotificationsLoading] = useState(false)
@@ -192,8 +194,10 @@ function App() {
   const loadPageData = async (page) => {
     if (!isAuthenticated) return
     setDataError('')
+    const loadingLoans = page === 'dashboard' || page === 'loans' || page === 'history'
+    if (loadingLoans) setLoansLoading(true)
     try {
-      if (page === 'dashboard' || page === 'loans' || page === 'history') {
+      if (loadingLoans) {
         const data = await apiRequest('/loans')
         setLoans(data.data || [])
       } else if (page === 'invitations') {
@@ -214,6 +218,7 @@ function App() {
       console.error(`Error loading ${page}:`, error)
       setDataError(error.message || 'Could not load data')
     } finally {
+      if (loadingLoans) setLoansLoading(false)
       if (page === 'notifications') setNotificationsLoading(false)
     }
   }
@@ -452,6 +457,10 @@ function App() {
                   <path d="M4 7l8 5 8-5" />
                 </svg>
                 Invitations
+              </a>
+              <a href="#" className={`sidebar-link ${currentPage === 'history' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setCurrentPage('history') }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="m7 16 4-5 3 3 5-7" /></svg>
+                Borrowing History
               </a>
               <button type="button" className="sidebar-link sidebar-action" onClick={() => setCurrentPage('notifications')} aria-label="Notifications">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1101,7 +1110,9 @@ function App() {
 
             {currentPage === 'inventory' && <Inventory invitations={invitations.filter(invitation => invitation.direction !== 'outgoing')} onInvitation={handleInvitation} />}
 
-            {(currentPage === 'loans' || currentPage === 'history') && (
+            {currentPage === 'history' && <BorrowingHistory loans={loans} user={user} loading={loansLoading} error={dataError} />}
+
+            {currentPage === 'loans' && (
               <>
                 <header className="dashboard-header">
                   <div className="header-content">
