@@ -135,6 +135,11 @@ const approveLoan = async (req, res, next) => {
       return res.status(400).json({ success: false, message: "Loan is no longer pending" });
     }
 
+    await Notification.findOneAndUpdate(
+      { type: "borrow_request", "data.loanId": loan._id },
+      { $set: { resolution: "accepted", read: true } }
+    );
+
     await notify(
       loan.borrowerId,
       req.user._id,
@@ -164,6 +169,10 @@ const rejectLoan = async (req, res, next) => {
     );
     if (!rejectedLoan) return res.status(400).json({ success: false, message: `Loan is already ${loan.status}` });
     await syncItemStatus(loan.itemId._id);
+    await Notification.findOneAndUpdate(
+      { type: "borrow_request", "data.loanId": loan._id },
+      { $set: { resolution: "rejected", read: true } }
+    );
     await notify(
       loan.borrowerId,
       req.user._id,
