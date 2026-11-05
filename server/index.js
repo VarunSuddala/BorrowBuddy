@@ -10,12 +10,12 @@ const { setSocketServer } = require("./config/socket.js");
 const { startDueDateReminderScheduler } = require("./services/dueDateReminderService.js");
 const fs = require("fs");
 
-const authRoutes = require("./Routes/authRoutes.js");
-const groupRoutes = require("./Routes/groupRoutes.js");
-const itemRoutes = require("./Routes/itemRoutes.js");
-const loanRoutes = require("./Routes/loanRoutes.js");
-const invitationRoutes = require("./Routes/invitationRoutes.js");
-const notificationRoutes = require("./Routes/notificationRoutes.js");
+const authRoutes = require("./routes/authRoutes.js");
+const groupRoutes = require("./routes/groupRoutes.js");
+const itemRoutes = require("./routes/itemRoutes.js");
+const loanRoutes = require("./routes/loanRoutes.js");
+const invitationRoutes = require("./routes/invitationRoutes.js");
+const notificationRoutes = require("./routes/notificationRoutes.js");
 
 const { notFound, errorHandler } = require("./middleware/errorMiddleware.js");
 
