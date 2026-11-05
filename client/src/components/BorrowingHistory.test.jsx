@@ -1,7 +1,9 @@
 import '@testing-library/jest-dom/vitest'
-import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
 import BorrowingHistory from './BorrowingHistory'
+
+afterEach(cleanup)
 
 const user = { _id: 'borrower-1' }
 const loans = [
@@ -39,6 +41,14 @@ describe('BorrowingHistory', () => {
 
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'camera' } })
     expect(screen.getByText('Camera')).toBeInTheDocument()
+  })
+
+  it('filters returned records by lifecycle status', () => {
+    render(<BorrowingHistory loans={loans} user={user} loading={false} error="" />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Returned' }))
+    expect(screen.getByText('Projector')).toBeInTheDocument()
+    expect(screen.queryByText('Camera')).not.toBeInTheDocument()
   })
 
   it('renders loading, error, and empty states', () => {

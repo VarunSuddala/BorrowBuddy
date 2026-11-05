@@ -24,7 +24,8 @@
 
 html, body {
   height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body {
@@ -36,10 +37,10 @@ body {
 }
 
 #root {
-  height: 100dvh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 @media (max-width: 768px) {
@@ -49,7 +50,6 @@ body {
   }
 
   #root {
-    height: auto;
     min-height: 100dvh;
     overflow: visible;
   }

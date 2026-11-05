@@ -1,97 +1,145 @@
 # BorrowBuddy
 
-BorrowBuddy is a full-stack community borrowing application. Users create groups, share inventory, request and manage loans, view borrowing/lending history, and receive in-app due-date reminders.
+BorrowBuddy is a full-stack community borrowing application. Users create or join groups, share inventory, request and manage loans, inspect borrowing/lending history, and receive persistent in-app due-date reminders.
 
-## Technology and architecture
+## Features
 
-- Frontend: React 19, Vite, Socket.IO client, plain CSS.
-- Backend: Node.js, Express, Mongoose, MongoDB, JWT, Socket.IO, and Multer uploads.
-- MongoDB stores users, groups, invitations, items, loans, notifications, and reminder logs.
-- The Vite frontend calls the Express API under /api; the backend serves /uploads and /health.
-- The due-date scheduler runs in the backend after MongoDB connects and creates persistent in-app notifications only.
+- JWT registration, login, profile, and protected API access.
+- Groups, members, managers, invitations, and join requests.
+- Inventory items with all-group or selected-group visibility.
+- Borrow requests, lender approval/rejection, activation, and return workflow.
+- Borrowing History for records where the authenticated user is borrower or lender.
+- In-app notifications and one-day-before, due-today, and overdue reminders.
+- Socket.IO events for authenticated real-time updates.
+- Group/item image uploads served from `/uploads`.
+
+## Architecture
+
+The frontend is React 19 built by Vite. The backend is Node.js/Express with Mongoose and MongoDB. The browser calls `/api` endpoints with a JWT bearer token. The backend authenticates the token, applies ownership/membership rules, reads/writes MongoDB, and serves uploads. The reminder scheduler runs in the backend after MongoDB connects.
+
+See the detailed guides:
+
+- [Developer handbook](docs/DEVELOPER_GUIDE.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Database design](docs/DATABASE.md)
+- [API reference](docs/API.md)
+- [Testing guide](docs/TESTING.md)
 
 ## Prerequisites
 
-Install Git, Node.js, npm, and a reachable MongoDB deployment. No exact Node engine is declared; this project was checked with Node v26.13.0 and npm 11.20.0. Use a currently supported Node LTS release for deployment.
+- Git.
+- Node.js and npm. No `engines` field is declared; the project was verified with Node 26.13.0 and npm 11.20.0. Use a supported Node LTS release for deployment.
+- A reachable MongoDB deployment.
 
-## Project structure
+## Install
 
-client/ contains the React/Vite application, components, API service, and styles. server/ contains the Express app, controllers, middleware, Mongoose models, routes, and reminder scheduler. docs/API.md is the route-by-route API reference.
+```powershell
+git clone <repository-url> BorrowBuddy
+cd BorrowBuddy
 
-## Installation
+cd server
+npm install
+copy .env.example .env
 
-From a terminal:
+cd ..\client
+npm install
+copy .env.example .env
+```
 
-    git clone <repository-url> BorrowBuddy
-    cd BorrowBuddy
-    cd server
-    npm install
-    cd ../client
-    npm install
-    cd ..
-    copy server\.env.example server\.env
-    copy client\.env.example client\.env
+On macOS/Linux, use `cp .env.example .env` instead of `copy`.
 
-On macOS/Linux replace the copy commands with cp server/.env.example server/.env and cp client/.env.example client/.env.
+## Configure the environment
 
-## Environment configuration
+### Backend: `server/.env`
 
-Backend server/.env variables:
-
-| Variable | Required | Description |
+| Variable | Required | Purpose |
 |---|---:|---|
-| NODE_ENV | No | development by default; use production when deployed. |
-| PORT | No | HTTP port. The example is 5000; code default is 3000. |
-| HOST | No | Bind host; example is 0.0.0.0. |
-| CORS_ORIGINS | No | Comma-separated allowed browser origins, e.g. http://localhost:5173. |
-| DBURL | Yes | MongoDB connection string. |
-| JWT_SECRET | Yes | Long random signing secret; never commit a real value. |
-| JWT_EXPIRE | No | JWT expiry passed to jsonwebtoken, e.g. 30d. |
-| BODY_LIMIT | No | Express body limit; default 1mb. |
-| UPLOAD_DIR | No | Upload directory; default server/uploads. |
-| REMINDER_INTERVAL_MS | No | Reminder scan interval; example is one hour. |
+| `NODE_ENV` | No | Runtime mode; defaults to `development`. |
+| `PORT` | No | HTTP port; code default is `3000`. |
+| `HOST` | No | Bind host; defaults to `0.0.0.0`. |
+| `CORS_ORIGINS` | No | Comma-separated allowed browser origins. |
+| `DBURL` | Yes | MongoDB connection string. |
+| `JWT_SECRET` | Yes | Long random signing secret; never commit it. |
+| `JWT_EXPIRE` | No | JWT expiry passed to `jsonwebtoken`, such as `30d`. |
+| `BODY_LIMIT` | No | Express request body limit; default `1mb`. |
+| `UPLOAD_DIR` | No | Upload storage directory; default `server/uploads`. |
+| `REMINDER_INTERVAL_MS` | No | Reminder scan interval; default one hour. |
 
-Frontend client/.env uses VITE_API_URL, including /api, e.g. http://localhost:5000/api when backend PORT is 5000. If omitted, current Vite development fallback is http://localhost:3000/api. Never put MongoDB credentials or JWT secrets in frontend variables.
+The committed [server/.env.example](server/.env.example) contains placeholders only. Set `DBURL` and `JWT_SECRET` before starting the server.
 
-## Running locally
+### Frontend: `client/.env`
 
-Start MongoDB, configure DBURL, then use terminal 1:
+| Variable | Required | Example |
+|---|---:|---|
+| `VITE_API_URL` | No | `http://localhost:3000/api` |
 
-    cd server
-    npm run dev
+Vite embeds this value during development/build. Never put MongoDB credentials or JWT secrets in frontend variables. If omitted in development, the API client falls back to `http://localhost:3000/api`.
 
-Check http://localhost:5000/health with the example port. In terminal 2:
+## Run locally
 
-    cd client
-    npm run dev
+Start MongoDB, then use two terminals:
 
-Open the Vite URL shown, normally http://localhost:5173. For the backend use npm start instead of npm run dev for a production-like process. For the frontend run npm run build then npm run preview.
+```powershell
+# Terminal 1
+cd BorrowBuddy\server
+npm run dev
 
-## Testing and checks
+# Terminal 2
+cd BorrowBuddy\client
+npm run dev
+```
 
-From server: npm test and npm run test:watch. From client: npm test, npm run test:watch, npm run lint, and npm run build. Tests do not use production credentials or send real notifications. Database-backed end-to-end testing requires a separately provisioned test MongoDB; this repository does not include an in-memory MongoDB service.
+Open `http://localhost:5173`. Verify backend/database readiness at `http://localhost:3000/health`; it returns HTTP 200 only while MongoDB is connected.
+
+For production-like local processes:
+
+```powershell
+cd server
+npm start
+
+cd ..\client
+npm run build
+npm run preview
+```
+
+## Test and check
+
+```powershell
+cd server
+npm test
+npm run test:coverage
+npm run test:watch
+
+cd ..\client
+npm test
+npm run test:watch
+npm run lint
+npm run build
+```
+
+The repository has no Playwright/Cypress runner or isolated MongoDB test service. Backend tests use isolated stubs/schema assertions and do not use production credentials. See [docs/TESTING.md](docs/TESTING.md) for coverage and unverified areas.
 
 ## Main workflows
 
-1. Register and log in; the returned JWT authenticates API calls.
-2. Create a group or request membership through invitations/join requests.
-3. Add or share items with all groups or selected groups.
-4. Request a loan; the lender approves/rejects it, and either party can activate/return it.
-5. Open Borrowing History to see records where you are borrower or lender; its API is GET /api/loans.
-6. For active loans with dates, the backend scheduler creates one in-app reminder before, on, and after the due date. Read or mark notifications in the existing Notifications UI.
-
-See docs/API.md for request/response details.
+1. Register or log in. The JWT is stored by the frontend and sent to protected routes.
+2. Create a group or request membership through invitations.
+3. Add inventory and choose all-group or selected-group sharing.
+4. Request an available visible item. The lender approves/rejects the request.
+5. Activate/return the loan through the borrowing workflow.
+6. Open Borrowing History to see borrowed and lent records.
+7. Receive due-date reminders in Notifications for active loans with due dates.
 
 ## Troubleshooting
 
-- MongoDB failure: confirm MongoDB is reachable, DBURL is valid, and hosted network access allows the server.
-- Missing JWT_SECRET: create server/.env and set a non-empty secret.
-- Port conflict: change PORT, set VITE_API_URL to the same backend port, and restart Vite.
-- CORS error: add the exact browser origin, including scheme and port, to CORS_ORIGINS.
-- 401 after login: log out and log in again to replace an expired token; verify the frontend uses the correct /api URL.
-- Missing images: confirm UPLOAD_DIR exists/is writable and browser/API use the same backend origin.
-- Missing reminders: confirm MongoDB is connected, loan status is active, dueDate exists, and the interval has elapsed or restart the backend for its immediate scan.
+- **MongoDB connection failure:** validate `DBURL`, database availability, credentials, and hosted-network allowlists.
+- **Missing JWT error:** set a non-empty `JWT_SECRET`, then restart the backend and log in again.
+- **Port conflict:** change `PORT`, then set `VITE_API_URL` to the matching `http://host:port/api` value and restart Vite.
+- **CORS error:** add the exact frontend origin, including scheme and port, to `CORS_ORIGINS`.
+- **API fetch failure:** check `/health`, confirm `VITE_API_URL` includes `http://` and `/api`, and inspect the browser Network tab.
+- **Missing images:** ensure `UPLOAD_DIR` exists and is writable and that the browser can reach the backend upload origin.
+- **Missing reminders:** confirm the loan is `active`, `dueDate` exists, borrower reference exists, MongoDB is connected, and the scheduler interval has elapsed. The scheduler also scans once at startup.
+- **Production scheduler duplication:** use one scheduler instance per deployment unless multi-process operation has been explicitly tested.
 
-## Development and production
+## Development notes
 
-Use separate MongoDB databases, JWT secrets, upload storage, CORS origins, and environment files for development and production. Never commit .env files or real credentials. Run one scheduler instance per deployment unless multi-instance operation has been explicitly validated.
+The server imports routes from `server/Routes/`. The lowercase `server/routes/` directory mirrors those files. The current implementation has no migration tool; schema/index changes need an explicit deployment plan. See the handbook for request tracing, database relationships, security limitations, and debugging steps.

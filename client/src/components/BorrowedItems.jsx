@@ -1,7 +1,12 @@
 import GroupIcon from './GroupIcon'
 import { getAssetUrl } from '../services/apiClient'
 
-const displayDate = value => value ? new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
+const displayDate = value => {
+  if (!value) return '—'
+  const date = new Date(value)
+  const month = date.toLocaleDateString(undefined, { month: 'short' })
+  return `${date.getDate()} ${month} ${date.getFullYear()}`
+}
 
 function BorrowedItems({ loans, items, members, mode, onReturn }) {
   const rows = loans.map(loan => {

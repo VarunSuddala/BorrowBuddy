@@ -21,7 +21,8 @@ function MemberAccordion({ member, items, expanded, onToggle, onBorrow, canRemov
         <strong>{member.name || 'Member'}</strong>
         <GroupIcon name="chevron" />
       </button>
-      {expanded && <div className="view-group-member-details">
+      <div className={`view-group-member-panel${expanded ? ' expanded' : ''}`} aria-hidden={!expanded} inert={!expanded}>
+        <div className="view-group-member-details">
         <section className="view-group-member-about">
           <h3><GroupIcon name="user" />About {member.name}</h3>
           <p><GroupIcon name="mail" />{member.email || 'Email not available'}</p>
@@ -30,20 +31,23 @@ function MemberAccordion({ member, items, expanded, onToggle, onBorrow, canRemov
         <section className="view-group-member-inventory">
           <h3><GroupIcon name="box" />Available Items ({availableItems.length})</h3>
           {items.length ? <div className="view-group-item-chips">
-            {items.map(item => <div className={`view-group-item-chip${item.status === 'borrowed' ? ' borrowed' : ''}`} key={item._id}>
+            {items.map(item => <div className={`view-group-item-chip${item.status === 'borrowed' ? ' borrowed' : item.status === 'requested' ? ' requested' : ''}`} key={item._id}>
               <GroupIcon name={itemIconFor(item)} />
               <strong>{item.name}</strong>
-              <span>{item.status === 'available' ? 'Available' : 'Borrowed'}</span>
+              <span>{item.status === 'available' ? 'Available' : item.status === 'requested' ? 'Requested' : item.status === 'booked' ? 'Booked' : item.status === 'borrowed' ? 'Borrowed' : item.status}</span>
             </div>)}
           </div> : <p className="view-group-no-items">No items shared by this member.</p>}
-          {availableItems.length > 0 && <button className="view-group-borrow-item" type="button" onClick={onBorrow}>
-            <GroupIcon name="borrow" />Borrow Item
-          </button>}
-          {canRemove && <button className="view-group-borrow-item" type="button" onClick={onRemove}>
-            Remove Member
-          </button>}
+          {(availableItems.length > 0 || canRemove) && <div className="view-group-member-actions">
+            {availableItems.length > 0 && <button className="view-group-borrow-item" type="button" onClick={onBorrow}>
+              <GroupIcon name="borrow" />Borrow Item
+            </button>}
+            {canRemove && <button className="view-group-borrow-item view-group-remove-member" type="button" onClick={onRemove}>
+              Remove Member
+            </button>}
+          </div>}
         </section>
-      </div>}
+        </div>
+      </div>
     </article>
   )
 }

@@ -70,18 +70,6 @@ const createGroup = async (req, res, next) => {
 
 const getGroups = async (req, res, next) => {
   try {
-    const acceptedInvitations = await Invitation.find({
-      inviteeId: req.user._id,
-      status: "accepted",
-    }).select("groupId");
-    const acceptedGroupIds = acceptedInvitations.map(invitation => invitation.groupId);
-    if (acceptedGroupIds.length) {
-      await Group.updateMany(
-        { _id: { $in: acceptedGroupIds } },
-        { $addToSet: { memberIds: req.user._id } }
-      );
-    }
-
     const groups = await Group.find({
       $or: [
         { ownerId: req.user._id },
@@ -205,13 +193,6 @@ const leaveGroup = async (req, res, next) => {
     if (!group.memberIds.some(id => id.toString() === userId)) {
       return res.status(403).json({ success: false, message: "You are not a member of this group" });
     }
-    if (await hasUnresolvedGroupLoan(group._id, req.user._id)) {
-      return res.status(400).json({
-        success: false,
-        message: "You cannot leave while you have requested, booked, or active loans in this group",
-      });
-    }
-
     const updatedGroup = await Group.findOneAndUpdate(
       { _id: group._id, memberIds: req.user._id, ownerId: { $ne: req.user._id } },
       { $pull: { memberIds: req.user._id, managerIds: req.user._id } },
@@ -220,6 +201,15 @@ const leaveGroup = async (req, res, next) => {
     if (!updatedGroup) {
       return res.status(400).json({ success: false, message: "You are no longer a member of this group" });
     }
+
+    await Invitation.updateMany(
+      {
+        groupId: group._id,
+        status: "accepted",
+        $or: [{ invitedUserId: req.user._id }, { requestedBy: req.user._id }],
+      },
+      { $set: { status: "cancelled" } }
+    );
 
     res.status(200).json({ success: true, message: "You left the group successfully", data: updatedGroup });
   } catch (error) {

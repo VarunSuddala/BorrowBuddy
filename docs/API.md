@@ -1,6 +1,6 @@
 # BorrowBuddy API reference
 
-This reference is generated from the Express routes under server/routes and the controllers they call. API paths are mounted under /api. Protected routes require the header Authorization: Bearer <JWT>. The JWT is issued by registration/login and the server derives ownership from the verified identity.
+This reference is based on the Express routes imported from `server/Routes` by [server/index.js](../server/index.js) and the controllers they call. API paths are mounted under `/api`. Protected routes require the header `Authorization: Bearer <JWT>`. The JWT is issued by registration/login and the server derives ownership from the verified identity.
 
 Successful responses use { success: true, data: ... }. Errors use { success: false, message: "..." }. Dates are ISO-8601 strings. There is no general pagination contract; notifications are limited to 50 records.
 
@@ -22,7 +22,7 @@ Example success: { "success": true, "data": { "_id": "...", "name": "Asha Rao", 
 | Method and path | Auth/permission | Request and behavior | Errors |
 |---|---|---|---|
 | POST /api/groups | Bearer | multipart/form-data: name required; description, categories JSON array, image optional. Image JPEG/JPG/PNG, max 2 MB. Owner becomes member and manager. | 400 invalid/missing data. |
-| GET /api/groups | Bearer | None. Lists groups owned by or containing the current user; accepted invitations are synchronized. | 401. |
+| GET /api/groups | Bearer | None. Lists groups owned by or containing the current user. | 401. |
 | GET /api/groups/discover | Bearer | None. Lists groups where current user is neither owner nor member, newest first. | 401. |
 | GET /api/groups/:id/details | Bearer, member | None. Returns group, members, visible items, active loans, per-member items and stats. | 403 non-member; 404 missing group. |
 | GET /api/groups/:id/items | Bearer, member | Query search, category, status. | 404 when membership/group cannot be found. |
@@ -70,7 +70,7 @@ Loan statuses are requested, booked, active, returned, rejected and cancelled.
 | PATCH /api/loans/:id/activate | Bearer, borrower/lender | None. Booked loan only; item must be booked. | 400 state; 403; 404. |
 | PATCH /api/loans/:id/return | Bearer, borrower/lender | Optional JSON returnDate and note; note max 500 characters. Active/booked only. | 200 returned loan; 400 invalid/state; 403; 404. |
 
-History classification is client-side: borrowerId equal to the authenticated user means Borrowed; lenderId equal means Lent. The backend ownership filter prevents another user's history from being returned. No history query filters or pagination are implemented.
+History classification is client-side: borrowerId equal to the authenticated user means Borrowed; lenderId equal means Lent. The backend ownership filter prevents another user's history from being returned. No history query filters or pagination are implemented. The current client performs search, role/status filtering, and newest-first sorting after this response is loaded.
 
 Example loan request: { "itemId": "...", "checkoutDate": "2026-11-05T00:00:00.000Z", "dueDate": "2026-11-12T00:00:00.000Z", "durationDays": 7, "note": "Please keep it dry", "groupId": "..." }.
 
@@ -88,7 +88,13 @@ Example reminder: { "success": true, "unreadCount": 1, "data": [{ "type": "due_d
 
 There is no public reminder endpoint. The server starts the scheduler after MongoDB connects, runs once immediately, then every REMINDER_INTERVAL_MS. It scans only active loans with a non-null dueDate and borrower reference.
 
-UTC calendar classification is one_day_before for one UTC day remaining, due_today for the due UTC date, and overdue for any earlier UTC date. Each loan/type has a unique ReminderLog and an atomic in-app claim; notifications have a unique sparse dedupeKey. Returned, rejected, cancelled, missing-date and missing-borrower loans are skipped. Only the borrower receives a due_date_reminder. Email reminders do not exist.
+UTC calendar classification is one_day_before for one UTC day remaining, due_today for the due UTC date, and overdue for any earlier UTC date. Each loan/type has a unique ReminderLog and an atomic in-app claim; notifications have a unique sparse dedupeKey. Returned, rejected, cancelled, missing-date and missing-borrower loans are skipped. Only the borrower receives a due_date_reminder. Email reminders do not exist. The scheduler has no public API endpoint.
+
+## Route and implementation notes
+
+- `GET /api/invitations` and `GET /api/invitations/me` call the same controller and return the current user's received invitations plus requests they created.
+- The invitation schema uses `invitedBy` and `invitedUserId`. The controller accepts the existing client payload name `inviteeId` as a compatibility alias, then stores the schema field.
+- `server/utils/itemVisibility.js` still contains a legacy `inviteeId` lookup for accepted-invitation synchronization. Because the schema uses `invitedUserId`, this path is a known implementation gap rather than a supported API guarantee.
 
 ## System and static routes
 

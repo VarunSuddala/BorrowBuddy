@@ -4,7 +4,6 @@ const User = require("../model/user.js");
 const Notification = require("../model/notification.js");
 const mongoose = require("mongoose");
 const { emitToUser } = require("../config/socket.js");
-const mongoose = require("mongoose");
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -32,10 +31,10 @@ const createInvitationNotification = async ({ recipientId, senderId, type, title
 // Send an invitation to a user to join a group
 const sendInvitation = async (req, res, next) => {
   try {
-    const { groupId, invitedUserId, message } = req.body;
+    const { groupId, invitedUserId = req.body?.inviteeId, message } = req.body || {};
     const inviterId = req.user._id;
 
-    if (!isValidId(groupId) || !isValidId(inviteeId)) {
+    if (!isValidId(groupId) || !isValidId(invitedUserId)) {
       return res.status(400).json({ success: false, message: "Group ID and Invitee ID are required" });
     }
 
@@ -84,8 +83,8 @@ const sendInvitation = async (req, res, next) => {
     try {
       invitation = await Invitation.create({
         groupId,
-        inviterId,
-        inviteeId,
+        invitedBy: inviterId,
+        invitedUserId,
         message: message ? message.trim() : "",
         status: "pending",
         requestType: "owner_invitation",
@@ -102,7 +101,7 @@ const sendInvitation = async (req, res, next) => {
 
     // Create real notification for invitee
     await createInvitationNotification({
-      recipientId: inviteeId,
+      recipientId: invitedUserId,
       senderId: inviterId,
       type: "group_invitation",
       title: "Group Invitation",
@@ -138,10 +137,10 @@ const getMyInvitations = async (req, res, next) => {
   try {
     const userId = req.user._id;
     const invitations = await Invitation.find({
-      $or: [{ inviteeId: userId }, { requestedBy: userId }],
+      $or: [{ invitedUserId: userId }, { requestedBy: userId }],
     })
       .populate("groupId", "name description image")
-      .populate("inviterId", "name email avatar")
+      .populate("invitedBy", "name email avatar")
       .populate("requestedBy", "name email avatar")
       .sort({ createdAt: -1 });
 
@@ -149,7 +148,7 @@ const getMyInvitations = async (req, res, next) => {
       ...invitation.toObject(),
       direction: invitation.requestType === "member_request"
         ? "outgoing"
-        : invitation.inviteeId.toString() === userId.toString() ? "incoming" : "outgoing",
+        : invitation.invitedUserId.toString() === userId.toString() ? "incoming" : "outgoing",
     }));
 
     res.status(200).json({ success: true, data });
@@ -183,11 +182,11 @@ const acceptInvitation = async (req, res, next) => {
       return res.status(400).json({ success: false, message: `Invitation is already ${invitation.status}` });
     }
 
-    const inviteeId = invitation.inviteeId;
+    const inviteeId = invitation.invitedUserId;
     const updatedInvitation = await Invitation.findOneAndUpdate(
       {
         _id: invitation._id,
-        inviteeId,
+        invitedUserId: inviteeId,
         status: "pending",
       },
       { $set: { status: "accepted" } },
@@ -219,7 +218,7 @@ const acceptInvitation = async (req, res, next) => {
 
     // Notify inviter
     await createInvitationNotification({
-      recipientId: invitation.inviterId._id,
+      recipientId: invitation.invitedBy._id,
       senderId: req.user._id,
       type: "invitation_accepted",
       title: "Invitation Accepted",
@@ -279,7 +278,7 @@ const rejectInvitation = async (req, res, next) => {
 
     // Notify inviter
     await createInvitationNotification({
-      recipientId: invitation.inviterId._id,
+      recipientId: invitation.invitedBy._id,
       senderId: req.user._id,
       type: "invitation_rejected",
       title: "Invitation Declined",
@@ -323,7 +322,7 @@ const requestToJoinGroup = async (req, res, next) => {
 
     const existingRequest = await Invitation.findOne({
       groupId,
-      inviteeId: userId,
+      invitedUserId: userId,
       requestType: "member_request",
       status: "pending",
     });
@@ -335,8 +334,8 @@ const requestToJoinGroup = async (req, res, next) => {
     try {
       request = await Invitation.create({
         groupId,
-        inviterId: userId,
-        inviteeId: userId,
+        invitedBy: userId,
+        invitedUserId: userId,
         requestedBy: userId,
         requestType: "member_request",
         message: typeof message === "string" ? message.trim() : "",
@@ -378,7 +377,7 @@ const getOwnerRequests = async (req, res, next) => {
     })
       .populate("groupId", "name description image")
       .populate("requestedBy", "name email avatar")
-      .populate("inviteeId", "name email avatar")
+      .populate("invitedUserId", "name email avatar")
       .sort({ createdAt: -1 });
 
     res.status(200).json({ success: true, data: requests });
@@ -399,7 +398,7 @@ const updateMembershipRequest = async (req, res, next, status) => {
     })
       .populate("groupId", "name ownerId memberIds")
       .populate("requestedBy", "name")
-      .populate("inviteeId", "name");
+      .populate("invitedUserId", "name");
 
     if (!request) {
       return res.status(404).json({ success: false, message: "Membership request not found" });
@@ -420,7 +419,7 @@ const updateMembershipRequest = async (req, res, next, status) => {
     if (status === "accepted") {
       const updatedGroup = await Group.findOneAndUpdate(
         { _id: request.groupId._id, ownerId: req.user._id },
-        { $addToSet: { memberIds: request.inviteeId._id } },
+        { $addToSet: { memberIds: request.invitedUserId._id } },
         { returnDocument: "after" }
       );
       if (!updatedGroup) {

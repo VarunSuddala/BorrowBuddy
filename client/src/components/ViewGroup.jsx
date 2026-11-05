@@ -12,7 +12,7 @@ import './ViewGroup.css'
 const getId = value => String(value?._id || value?.id || value || '')
 const ownerIdFor = (item, group) => getId(item.ownerId || group?.ownerId)
 
-function ViewGroup({ groupId, group, onBack, onDeleteGroup }) {
+function ViewGroup({ groupId, group, onBack, onDeleteGroup, onGroupLeft }) {
   const [data, setData] = useState({ members: [], items: [], loans: [] })
   const [activeTab, setActiveTab] = useState('members')
   const [expandedMemberId, setExpandedMemberId] = useState('')
@@ -47,7 +47,7 @@ function ViewGroup({ groupId, group, onBack, onDeleteGroup }) {
       setData(result)
       setExpandedMemberId(current => result.members.some(member => getId(member) === current)
         ? current
-        : (result.members[0]?._id || result.members[0]?.id || ''))
+        : '')
     } catch (loadError) {
       setError(loadError.message || 'Could not load group details')
     } finally {
@@ -203,7 +203,8 @@ function ViewGroup({ groupId, group, onBack, onDeleteGroup }) {
     setError('')
     try {
       await apiRequest(`/groups/${groupId}/leave`, { method: 'PATCH' })
-      onBack()
+      if (onGroupLeft) onGroupLeft(groupId)
+      else onBack()
     } catch (leaveError) {
       setError(leaveError.message || 'Could not leave group')
       setBusy(false)
@@ -292,7 +293,7 @@ function ViewGroup({ groupId, group, onBack, onDeleteGroup }) {
           </div>
           <div className="view-group-summary-actions">
             <button className="view-group-invite-action" type="button" onClick={openInviteModal} disabled={busy}>Invite Member</button>
-            {!isOwner && <button className="view-group-borrow-item" type="button" onClick={leaveGroup} disabled={busy}>Leave Group</button>}
+            {!isOwner && <button className="view-group-invite-action view-group-leave-action" type="button" onClick={leaveGroup} disabled={busy}>Leave Group</button>}
           </div>
           {isOwner && <button className="view-group-danger-action" type="button" onClick={deleteGroup} disabled={busy}>Delete Group</button>}
           <div className="view-group-summary-stats"><div className="view-group-summary-stat"><GroupIcon name="box" /><div><strong>{loading ? '—' : data.items.length}</strong><span>Total Items</span></div></div></div>

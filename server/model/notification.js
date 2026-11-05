@@ -44,6 +44,10 @@ const notificationSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    resolution: {
+      type: String,
+      enum: ["accepted", "rejected"],
+    },
     data: {
       groupId: { type: mongoose.Schema.Types.ObjectId, ref: "Group" },
       itemId: { type: mongoose.Schema.Types.ObjectId, ref: "BorrowableItem" },
