@@ -26,6 +26,7 @@ const notificationSchema = new mongoose.Schema(
         "borrow_rejected",
         "loan_activated",
         "item_returned",
+        "due_date_reminder",
         "general"
       ],
       required: [true, "Notification type is required"],
@@ -53,6 +54,13 @@ const notificationSchema = new mongoose.Schema(
       loanId: { type: mongoose.Schema.Types.ObjectId, ref: "Loan" },
       invitationId: { type: mongoose.Schema.Types.ObjectId, ref: "Invitation" },
       requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      reminderType: { type: String },
+    },
+    dedupeKey: {
+      type: String,
+      sparse: true,
+      unique: true,
+      select: false,
     },
   },
   {

@@ -15,7 +15,7 @@ export function InvitationsPanel({ invitations, onRespond, onClose }) {
   return <Drawer title="Invitations" onClose={onClose}>
     {invitations.length ? invitations.map(invitation => <article className="inventory-panel-card" key={invitation._id}>
       <strong>{invitation.groupName || invitation.groupId?.name || 'Group invitation'}</strong>
-      <p>{invitation.inviterName || invitation.inviterId?.name || 'A group member'} invited you to join {invitation.groupName || invitation.groupId?.name || 'a group'}.</p>
+      <p>{invitation.inviterName || invitation.invitedBy?.name || invitation.inviterId?.name || 'A group member'} invited you to join {invitation.groupName || invitation.groupId?.name || 'a group'}.</p>
       <small>Invited {displayDate(invitation.createdAt)}</small>
       {invitation.status === 'pending' ? <footer><button type="button" className="inventory-secondary" onClick={() => onRespond(invitation._id, 'rejected')}>Reject</button><button type="button" className="inventory-primary" onClick={() => onRespond(invitation._id, 'accepted')}>Accept</button></footer> : <span className={`inventory-result ${invitation.status}`}>{invitation.status}</span>}
     </article>) : <div className="inventory-panel-empty"><GroupIcon name="people" /><strong>No invitations yet</strong><span>Group invitations will appear here.</span></div>}

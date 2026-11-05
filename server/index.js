@@ -7,20 +7,22 @@ const jwt = require("jsonwebtoken");
 const { Constants } = require("./config/constants.js");
 const { dbConnect } = require("./config/database.js");
 const { setSocketServer } = require("./config/socket.js");
+const { startDueDateReminderScheduler } = require("./services/dueDateReminderService.js");
 const fs = require("fs");
 
-const authRoutes = require("./routes/authRoutes.js");
-const groupRoutes = require("./routes/groupRoutes.js");
-const itemRoutes = require("./routes/itemRoutes.js");
-const loanRoutes = require("./routes/loanRoutes.js");
-const invitationRoutes = require("./routes/invitationRoutes.js");
-const notificationRoutes = require("./routes/notificationRoutes.js");
+const authRoutes = require("./Routes/authRoutes.js");
+const groupRoutes = require("./Routes/groupRoutes.js");
+const itemRoutes = require("./Routes/itemRoutes.js");
+const loanRoutes = require("./Routes/loanRoutes.js");
+const invitationRoutes = require("./Routes/invitationRoutes.js");
+const notificationRoutes = require("./Routes/notificationRoutes.js");
 
 const { notFound, errorHandler } = require("./middleware/errorMiddleware.js");
 
 const app = express();
 const httpServer = http.createServer(app);
 let isShuttingDown = false;
+let reminderScheduler;
 const corsOptions = {
   origin: (origin, callback) => {
     if (!origin || Constants.CORS_ORIGINS.includes(origin)) {
@@ -93,6 +95,7 @@ const shutdown = async signal => {
 
   await new Promise(resolve => httpServer.close(() => resolve()));
   io.close();
+  if (reminderScheduler) clearInterval(reminderScheduler);
   if (mongoose.connection.readyState !== 0) {
     await mongoose.connection.close();
   }
@@ -119,6 +122,7 @@ const start = async () => {
   }
 
   await dbConnect();
+  reminderScheduler = startDueDateReminderScheduler();
   await new Promise((resolve, reject) => {
     httpServer.once("error", reject);
     httpServer.listen(Constants.PORT, Constants.HOST, () => {

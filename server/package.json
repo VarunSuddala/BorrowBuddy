@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test --test-concurrency=1 test",
+    "test:watch": "node --test --watch test",
+    "test:coverage": "node --test --experimental-test-coverage --test-concurrency=1 test",
     "dev": "nodemon -r dotenv/config index.js",
     "start": "node -r dotenv/config index.js"
   },
