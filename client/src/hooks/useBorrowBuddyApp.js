@@ -32,10 +32,15 @@ export default function useBorrowBuddyApp() {
   const [groups, setGroups] = useState([])
   const [leftGroupIds, setLeftGroupIds] = useState(() => new Set())
   const [discoverableGroups, setDiscoverableGroups] = useState([])
+  const [discoverQuery] = useState('')
+  const [, setDiscoverLoading] = useState(false)
+  const [, setDiscoverError] = useState('')
+  const [groupSearchQuery, setGroupSearchQuery] = useState('')
   const [availableMembers, setAvailableMembers] = useState([])
   const [membersLoading, setMembersLoading] = useState(false)
   const [selectedGroupId, setSelectedGroupId] = useState(null)
   const [loans, setLoans] = useState([])
+  const [loansLoading, setLoansLoading] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [borrowRequestResults, setBorrowRequestResults] = useState({})
   const [unreadCount, setUnreadCount] = useState(0)
@@ -43,6 +48,7 @@ export default function useBorrowBuddyApp() {
   const [invitations, setInvitations] = useState([])
   const [ownerRequests, setOwnerRequests] = useState([])
   const [dataError, setDataError] = useState('')
+  const [, setDataLoading] = useState(false)
   const [loanActionId, setLoanActionId] = useState('')
   const [currentTime] = useState(() => Date.now())
 
@@ -99,13 +105,30 @@ export default function useBorrowBuddyApp() {
     }
   }
 
+  async function fetchDiscoverableGroups(query = '') {
+    if (!isAuthenticated) return
+    setDiscoverLoading(true)
+    setDiscoverError('')
+    try {
+      const data = await apiRequest(`/groups/discover?search=${encodeURIComponent(query.trim())}`)
+      setDiscoverableGroups(data.data || [])
+    } catch (error) {
+      console.error('Error fetching discoverable groups:', error)
+      setDiscoverError(error.message || 'Could not discover groups')
+      setDiscoverableGroups([])
+    } finally {
+      setDiscoverLoading(false)
+    }
+  }
+
   const handleCreateGroup = async () => {
     if (!groupName.trim()) {
-      alert('Please enter a group name')
+      setAuthMessage({ type: 'error', text: 'Please enter a group name' })
       return
     }
 
-    const selectedMemberData = availableMembers.filter(member => member.selected)
+    setDataLoading(true)
+    setDataError('')
     try {
       const token = localStorage.getItem('token')
       const formData = new FormData()
@@ -116,6 +139,7 @@ export default function useBorrowBuddyApp() {
 
       const groupData = await apiRequest('/groups', { method: 'POST', body: formData }, token)
 
+      const selectedMemberData = availableMembers.filter(member => member.selected)
       for (const member of selectedMemberData) {
         await apiRequest('/invitations', {
           method: 'POST',
@@ -132,10 +156,14 @@ export default function useBorrowBuddyApp() {
       setSelectedCategories([])
       setAvailableMembers(prev => prev.map(member => ({ ...member, selected: false })))
       setMemberSearchQuery('')
+      setAuthMessage({ type: 'success', text: 'Group created successfully!' })
       setCurrentPage('my-groups')
+      await fetchGroups()
     } catch (error) {
       console.error('Error creating group:', error)
-      alert(error.message || 'Failed to create group')
+      setAuthMessage({ type: 'error', text: error.message || 'Failed to create group' })
+    } finally {
+      setDataLoading(false)
     }
   }
 
@@ -180,6 +208,14 @@ export default function useBorrowBuddyApp() {
     }
   }, [currentPage, isAuthenticated])
 
+  // Fetch searchable discoverable groups when the discovery page is active.
+  useEffect(() => {
+    if (currentPage === 'discover-groups' && isAuthenticated) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchDiscoverableGroups(discoverQuery)
+    }
+  }, [currentPage, isAuthenticated, discoverQuery])
+
   const handleViewGroup = (groupId) => {
     setSelectedGroupId(groupId)
     setCurrentPage('view-group')
@@ -202,8 +238,10 @@ export default function useBorrowBuddyApp() {
   const loadPageData = async (page) => {
     if (!isAuthenticated) return
     setDataError('')
+    const loadingLoans = page === 'dashboard' || page === 'loans' || page === 'history'
+    if (loadingLoans) setLoansLoading(true)
     try {
-      if (page === 'dashboard' || page === 'loans' || page === 'history') {
+      if (loadingLoans) {
         const data = await apiRequest('/loans')
         setLoans(data.data || [])
       } else if (page === 'invitations') {
@@ -234,6 +272,7 @@ export default function useBorrowBuddyApp() {
       console.error(`Error loading ${page}:`, error)
       setDataError(error.message || 'Could not load data')
     } finally {
+      if (loadingLoans) setLoansLoading(false)
       if (page === 'notifications') setNotificationsLoading(false)
     }
   }
@@ -431,6 +470,7 @@ export default function useBorrowBuddyApp() {
     currentTime,
     dataError,
     discoverableGroups,
+    groupSearchQuery,
     groupDescription,
     groupImage,
     groupName,
@@ -452,6 +492,7 @@ export default function useBorrowBuddyApp() {
     invitations,
     loanActionId,
     loans,
+    loansLoading,
     loginData,
     loginPageMode,
     memberSearchQuery,
@@ -474,6 +515,7 @@ export default function useBorrowBuddyApp() {
     setGroupDescription,
     setGroupImage,
     setGroupName,
+    setGroupSearchQuery,
     setLoginData,
     setLoginPageMode,
     setMemberSearchQuery,

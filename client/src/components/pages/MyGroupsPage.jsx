@@ -1,7 +1,7 @@
 import GroupItemCount from '../Inventory/GroupItemCount'
 import { getAssetUrl as getAssetUrl } from '../../services/apiClient'
 export default function MyGroupsPage({ app }) {
-  const { activeGroupSection, categories, discoverableGroups, groups, handleJoinRequest, handleViewGroup, setActiveGroupSection, setCurrentPage } = app
+  const { activeGroupSection, categories, dataError, discoverableGroups, groupSearchQuery, groups, handleJoinRequest, handleViewGroup, setActiveGroupSection, setCurrentPage, setGroupSearchQuery } = app
 
   return (
     app.currentPage === 'my-groups' && (
@@ -49,7 +49,8 @@ export default function MyGroupsPage({ app }) {
                       </button>
                     </header>
     
-                    <div className="groups-content">
+                    {dataError && <div className="auth-message error">{dataError}</div>}
+                <div className="groups-content">
                       <div className="groups-main">
                         <div className="groups-search-bar">
                           <div className="search-input-wrapper">
@@ -57,9 +58,15 @@ export default function MyGroupsPage({ app }) {
                               <circle cx="11" cy="11" r="8" />
                               <line x1="21" y1="21" x2="16.65" y2="16.65" />
                             </svg>
-                            <input type="text" placeholder="Search groups..." className="search-input" />
+                            <input
+                          type="text"
+                          placeholder="Search your groups..."
+                          className="search-input"
+                          value={groupSearchQuery}
+                          onChange={(e) => setGroupSearchQuery(e.target.value)}
+                        />
                           </div>
-                          <select className="category-select">
+                          <select className="category-select" disabled>
                             <option>All Categories</option>
                             <option>Books</option>
                             <option>Electronics</option>

@@ -1,8 +1,11 @@
+import BorrowingHistory from '../BorrowingHistory'
 export default function LoansPage({ app }) {
   const { currentPage, dataError, handleLoanAction, loanActionId, loans, user } = app
 
   return (
-    (app.currentPage === 'loans' || app.currentPage === 'history') && (
+    <>
+    {app.currentPage === 'history' && <BorrowingHistory loans={loans} user={user} loading={app.loansLoading} error={dataError} />}
+    {app.currentPage === 'loans' && (
     <>
                     <header className="dashboard-header">
                       <div className="header-content">
@@ -15,7 +18,7 @@ export default function LoansPage({ app }) {
                       <table className="loans-table">
                         <thead><tr><th>Item</th><th>Role</th><th>Other party</th><th>Status</th><th>Due</th><th>Action</th></tr></thead>
                         <tbody>
-                          {loans.filter(loan => currentPage === 'history' ? ['returned', 'rejected', 'cancelled'].includes(loan.status) : !['returned', 'rejected', 'cancelled'].includes(loan.status)).map(loan => {
+                          {loans.filter(loan => !['returned', 'rejected', 'cancelled'].includes(loan.status)).map(loan => {
                             const borrower = loan.borrowerId?._id === user?._id
                             const otherParty = borrower ? loan.lenderId?.name : loan.borrowerId?.name
                             const action = loan.status === 'requested' && !borrower ? 'approve' : loan.status === 'booked' ? 'activate' : loan.status === 'active' ? 'return' : null
@@ -23,9 +26,10 @@ export default function LoansPage({ app }) {
                           })}
                         </tbody>
                       </table>
-                      {loans.filter(loan => currentPage === 'history' ? ['returned', 'rejected', 'cancelled'].includes(loan.status) : !['returned', 'rejected', 'cancelled'].includes(loan.status)).length === 0 && <div className="no-groups-message"><p>No loans to show.</p></div>}
+                      {loans.filter(loan => !['returned', 'rejected', 'cancelled'].includes(loan.status)).length === 0 && <div className="no-groups-message"><p>No loans to show.</p></div>}
                     </div>
                   </>
-    )
+    )}
+    </>
   )
 }

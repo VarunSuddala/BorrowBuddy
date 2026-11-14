@@ -32,7 +32,7 @@ export default function DashboardSidebar({ app }) {
                     </svg>
                     Dashboard
                   </a>
-                  <a href="#" className={`sidebar-link ${currentPage === 'my-groups' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setCurrentPage('my-groups') }}>
+                  <a href="#" className={`sidebar-link ${currentPage === 'my-groups' || currentPage === 'discover-groups' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setCurrentPage('my-groups') }}>
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                       <circle cx="9" cy="7" r="4" />
@@ -54,7 +54,11 @@ export default function DashboardSidebar({ app }) {
                     </svg>
                     Invitations
                   </a>
-                  <button type="button" className={`sidebar-link sidebar-action ${currentPage === 'notifications' ? 'active' : ''}`} onClick={() => setCurrentPage('notifications')} aria-label="Notifications">
+                  <a href="#" className={`sidebar-link ${currentPage === 'history' ? 'active' : ''}`} onClick={(e) => { e.preventDefault(); setCurrentPage('history') }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="m7 16 4-5 3 3 5-7" /></svg>
+                  Borrowing History
+                </a>
+                <button type="button" className={`sidebar-link sidebar-action ${currentPage === 'notifications' ? 'active' : ''}`} onClick={() => setCurrentPage('notifications')} aria-label="Notifications">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
                       <path d="M10 21h4" />
