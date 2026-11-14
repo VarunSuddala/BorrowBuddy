@@ -206,7 +206,7 @@ const leaveGroup = async (req, res, next) => {
       {
         groupId: group._id,
         status: "accepted",
-        $or: [{ inviteeId: req.user._id }, { requestedBy: req.user._id }],
+        $or: [{ invitedUserId: req.user._id }, { requestedBy: req.user._id }],
       },
       { $set: { status: "cancelled" } }
     );

@@ -16,6 +16,7 @@ const Constants = {
   JWT_SECRET: process.env.JWT_SECRET,
   BODY_LIMIT: process.env.BODY_LIMIT || "1mb",
   UPLOAD_DIR: path.resolve(process.env.UPLOAD_DIR || path.resolve(__dirname, "../uploads")),
+  REMINDER_INTERVAL_MS: Number(process.env.REMINDER_INTERVAL_MS) || 60 * 60 * 1000,
 };
 
 module.exports = { Constants };
