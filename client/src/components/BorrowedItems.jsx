@@ -1,5 +1,5 @@
-import GroupIcon from './GroupIcon'
 import { getAssetUrl } from '../services/apiClient'
+import GroupIcon from './GroupIcon'
 
 const displayDate = value => {
   if (!value) return '—'
